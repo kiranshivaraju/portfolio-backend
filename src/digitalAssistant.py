@@ -34,7 +34,7 @@ class State(TypedDict):
     rephrased_question: Annotated[str, fallback_function]
     relevance: str
     chat_history: List
-    rag_docs: List
+    rag_docs: List = []
     session_id: str
     model_response: str
     user_question_from_chat_history: List
