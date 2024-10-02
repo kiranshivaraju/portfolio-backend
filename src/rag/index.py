@@ -52,6 +52,3 @@ def add_data_to_index(index_name, data):
             print(e)
             continue
     return {"message": "Data indexed successfully!"}
-
-# a = add_data_to_index("kiran_portfolio", data)
-# print(a)
