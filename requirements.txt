@@ -5,3 +5,5 @@ langchain-qdrant
 langgraph
 fastapi
 uvicorn
+pydantic
+python-dotenv
