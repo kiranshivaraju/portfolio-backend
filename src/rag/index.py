@@ -21,7 +21,7 @@ client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
 chunk_size = 50
 data = []
 
-with open("src/rag/data/data_to_index.jsonl", "r") as file:
+with open("src/rag/data/data_in_jsonl.jsonl", "r") as file:
     for line in file:
         # Parse each line (JSON object) and append to the list
         data.append(json.loads(line))
