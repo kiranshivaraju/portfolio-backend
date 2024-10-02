@@ -1,0 +1,4 @@
+.env
+src/rag/data/data_to_index.jsonl
+__pycache__/
+test.py

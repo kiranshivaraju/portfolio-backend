@@ -1,0 +1,7 @@
+pymongo
+groq
+langchain-openai
+langchain-qdrant
+langgraph
+fastapi
+uvicorn
