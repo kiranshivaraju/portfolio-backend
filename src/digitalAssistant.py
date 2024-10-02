@@ -203,7 +203,7 @@ class DigitalAssistant():
             model=self.model,)
         answer = response.choices[0].message.content
         print("response from grounding_model node :: ", answer)
-        return {"model_response": answer}
+        return {"model_response": answer, "rag_docs": []}
     
     def retrieve_vector_store(self, state):
         print("---RETRIEVE VECTOR STORE NODE---")
