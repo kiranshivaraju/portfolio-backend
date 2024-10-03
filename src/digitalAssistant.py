@@ -54,7 +54,8 @@ class DigitalAssistant():
         self.vectorstore = QdrantVectorStore(client=self.client, collection_name=self.QDRANT_COLLECTION_NAME, embedding=self.embeddings)
         self.retriever = self.vectorstore.as_retriever(search_type = "similarity", search_kwargs = {"k": 5})
         self.mongo = MongoDB()
-        self.llm = Groq(api_key=self.GROQ_API_KEY)
+        # self.llm = Groq(api_key=self.GROQ_API_KEY)
+        self.openai_llm = ChatOpenAI(api_key=self.OPENAI_API_KEY, model="gpt-4o-mini")
         self.model = MODEL
 
         self.check_for_irrelevancy_template = """ You are a query classifier who is going to classify the given query to either chitchat or if it is relevant to Kiran, his career, work, educational background. If the query is related to Kiran, then you are supposed to reply with a True, if it is not, then you are supposed to reply with a False. You are supposed to evaluate the chat history and the current user question and then make the decision of either replying with a True or False. Stick to saying only True or False, you dont have to provide any explanation. All sorts of greetings or other topics should be classified as chithcat. Only questions specific to Kiran, his career or his personal work and habits should be classified as True. Here are a few examples:
@@ -156,17 +157,13 @@ class DigitalAssistant():
         print("---CHECK FOR IRRELEVANCY NODE---")
         user_input = state["question"]
         chat_history = state["chat_history"]
-        response = self.llm.chat.completions.create(
-            messages = [
-                {
-                    "role": "user",
-                    "content": self.check_for_irrelevancy_template + f" This is the chat history: {chat_history}. This is the user question: {user_input}",
-                }
-                        ],
-            model=self.model,)
-        answer = response.choices[0].message.content
-        print("response from check_for_irrelevancy node", answer)
-        if "True" in answer or "true" in answer:
+        messages = [
+                    ("system", self.check_for_irrelevancy_template),
+                    ("human", f"This is the chat history: {chat_history}. This is the rephrased question query: {user_input}"),
+                   ]
+        answer = self.openai_llm.invoke(messages)
+        print("response from check_for_irrelevancy node", answer.content)
+        if "True" in answer.content or "true" in answer.content:
             return {"relevance": True}
         else:
             return {"relevance": False}
@@ -176,34 +173,26 @@ class DigitalAssistant():
         user_question_from_chat_history = state["user_question_from_chat_history"]
         user_input = state["question"]
         # chat_history = state["chat_history"]
-        response = self.llm.chat.completions.create(
-            messages = [
-                {
-                    "role": "user",
-                    "content": self.rephrase_question_template + f" These are the previous user questions : {user_question_from_chat_history}. This is the current user question: {user_input}",
-                }
-                        ],
-            model=self.model,)
-        answer = response.choices[0].message.content
-        print("response from rephrase_question node :: ", answer)
+        messages = [
+                    ("system", self.rephrase_question_template),
+                    ("human", f"These are the previous questions by the user: {user_question_from_chat_history}. This is the user query: {user_input}"),
+                  ]
+        answer = self.openai_llm.invoke(messages)
+        print("response from rephrase_question node :: ", answer.content)
         print("--------------------------------------")
-        return {"rephrased_question": answer}
+        return {"rephrased_question": answer.content}
     
     def grounding_model(self, state):
         print("---GROUNDING MODEL NODE---")
         user_input = state["question"]
         chat_history = state["chat_history"]
-        response = self.llm.chat.completions.create(
-            messages = [
-                {
-                    "role": "user",
-                    "content": self.grounding_template + f" These are the previous conversations : {chat_history}. This is the current user question: {user_input}",
-                }
-                        ],
-            model=self.model,)
-        answer = response.choices[0].message.content
-        print("response from grounding_model node :: ", answer)
-        return {"model_response": answer, "rag_docs": []}
+        messages = [
+                    ("system", f"{self.grounding_template}"),
+                    ("human", f"This is the chat history: {chat_history}. This is the user query: {user_input}"),
+                   ]
+        answer = self.openai_llm.invoke(messages)
+        print("response from grounding_model node :: ", answer.content)
+        return {"model_response": answer.content, "rag_docs": []}
     
     def retrieve_vector_store(self, state):
         print("---RETRIEVE VECTOR STORE NODE---")
@@ -219,17 +208,14 @@ class DigitalAssistant():
         chat_history = state["chat_history"]
         user_input = state["rephrased_question"]
         rag_docs = state["rag_docs"]
-        response = self.llm.chat.completions.create(
         messages = [
-                {
-                    "role": "user",
-                    "content": self.rag_template + f" This is the context you have access to. Context: {str(rag_docs)}.  These are the previous conversations : {chat_history}. This is the current user question: {user_input}",
-                }
-                        ],
-            model=self.model,)
-        answer = response.choices[0].message.content
-        print("response from aggregate_answer node :: ", answer)
-        return {"model_response": answer}
+                    ("system", self.rag_template),
+                    ("human", f"This is the context for your reference. Context: {str(rag_docs)}. These are the previous conversations : {chat_history}.  This is the user query you need to answer: {user_input}"),
+                   ]
+        answer = self.openai_llm.invoke(messages)
+
+        print("response from aggregate_answer node :: ", answer.content)
+        return {"model_response": answer.content}
     
     def save_chat_history(self, state):
         print("---SAVE CHAT HISTORY NODE---")
